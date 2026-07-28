@@ -15,7 +15,10 @@ async function showInventory(ctx) {
   }
 
   const lines = res.rows.map((r) => `${r.emoji} ${r.name} x${r.qty}`).join('\n');
-  await ctx.reply(`🎒 Inventory\n\n${lines}`, Markup.inlineKeyboard([backRow()]));
+  const sellButtons = res.rows.map((r) => [Markup.button.callback(`Sell 1 ${r.emoji}`, `market:sell:${r.item_key}`)]);
+  sellButtons.push(backRow());
+
+  await ctx.reply(`🎒 Inventory\n\n${lines}`, Markup.inlineKeyboard(sellButtons));
 }
 
 function registerInventory(bot) {

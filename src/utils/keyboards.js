@@ -4,7 +4,7 @@ function mainMenu() {
   return Markup.inlineKeyboard([
     [Markup.button.callback('👤 Profile', 'menu:profile'), Markup.button.callback('🎒 Inventory', 'menu:inventory')],
     [Markup.button.callback('🌍 Explore', 'menu:explore'), Markup.button.callback('🏪 Market', 'menu:market')],
-    [Markup.button.callback('⚙️ Settings', 'menu:settings')]
+    [Markup.button.callback('🏘️ Villages', 'village:list'), Markup.button.callback('⚙️ Settings', 'menu:settings')]
   ]);
 }
 

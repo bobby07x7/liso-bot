@@ -69,3 +69,56 @@ INSERT INTO items (key, name, emoji, price, category, image_url) VALUES
   ('iron_sword', 'Iron Sword', '⚔️', 250, 'weapon', NULL),
   ('diamond', 'Diamond', '💎', 1900, 'resource', NULL)
 ON CONFLICT (key) DO NOTHING;
+
+-- ===== Phase 2: dynamic market, NPC villages, world tick =====
+
+CREATE TABLE IF NOT EXISTS market_state (
+  item_key TEXT PRIMARY KEY REFERENCES items(key) ON DELETE CASCADE,
+  base_price INT NOT NULL,
+  current_price INT NOT NULL,
+  supply INT DEFAULT 1000,
+  demand_pressure NUMERIC DEFAULT 0,
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO market_state (item_key, base_price, current_price)
+SELECT key, price, price FROM items
+ON CONFLICT (item_key) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS market_transactions (
+  id SERIAL PRIMARY KEY,
+  item_key TEXT REFERENCES items(key),
+  player_id INT REFERENCES players(id),
+  type TEXT CHECK (type IN ('buy', 'sell')),
+  qty INT DEFAULT 1,
+  price_each INT,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS npc_villages (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  x INT NOT NULL,
+  y INT NOT NULL,
+  population INT DEFAULT 50,
+  food INT DEFAULT 200,
+  army INT DEFAULT 10,
+  gold INT DEFAULT 500,
+  status TEXT DEFAULT 'stable',
+  last_tick_at TIMESTAMP DEFAULT NOW()
+);
+
+INSERT INTO npc_villages (name, x, y, population, food, army, gold)
+SELECT * FROM (VALUES
+  ('Rivermeet', 3, 2, 60, 250, 12, 800),
+  ('Stonehollow', -4, 5, 45, 180, 8, 500),
+  ('Ashford', 1, -6, 70, 300, 15, 1100)
+) AS seed(name, x, y, population, food, army, gold)
+WHERE NOT EXISTS (SELECT 1 FROM npc_villages);
+
+CREATE TABLE IF NOT EXISTS world_tick_log (
+  id SERIAL PRIMARY KEY,
+  tick_number INT,
+  summary JSONB,
+  created_at TIMESTAMP DEFAULT NOW()
+);

@@ -71,21 +71,53 @@ instead of re-uploading the file every time. This is much faster at scale.
 
 - `/start` — registration, DNA trait roll (2 random traits), welcome banner
 - `/profile` — stats card with health/energy bars, gold, reputation, titles
-- `/inventory` — resource/item list
+- `/inventory` — resource/item list, with sell buttons (Phase 2)
 - `/explore` — grid movement (⬆️⬇️⬅️➡️) + discovery naming system
-- `/market` — category browsing + buy flow, gold deduction, inventory credit
+- `/market` — category browsing + buy/sell flow
 - `/admin` (owner-only) — broadcast, eco give/take, ban/unban, serverstats
 - Audit logging — every meaningful action writes to `audit_log` and
   optionally mirrors to a Telegram log channel
 
+## What's implemented (Phase 2 — the living world)
+
+- **World tick engine** (`src/engine/worldTick.js` + `scheduler.js`) — runs on
+  a cron schedule (default every 10 min, tune via `WORLD_TICK_CRON` in
+  `.env`, e.g. `*/5 * * * *`). Each tick:
+  - Recalculates every item's market price from supply/demand
+  - Regenerates depleted world tile resources
+  - Simulates NPC villages: food consumption/production, population growth,
+    famine, and collapse
+  - Logs a summary to `world_tick_log` and pushes notable events (famine,
+    village collapse, big price swings) to the log channel
+- **Dynamic market** (`src/utils/pricing.js`) — `market_state` table tracks
+  `base_price`, `current_price`, `supply`, `demand_pressure` per item.
+  Buying nudges price up and supply down immediately; selling does the
+  opposite. The tick engine eases prices toward a supply/demand target each
+  cycle rather than snapping, so charts move smoothly. All buys/sells are
+  logged in `market_transactions`.
+- **NPC villages** (`src/commands/villages.js`) — `/villages` lists
+  discovered villages with a status emoji (🟢 thriving, 🟡 stable, 🔴
+  starving, ⚫ collapsed). `/village <id>` shows details plus:
+  - **Donate** — spend 5 wood to boost village food, +5 kindness reputation
+  - **Raid** — risk/reward attack; success loots gold and adds bandit
+    reputation, failure costs health. Currently uses a placeholder power
+    value (`10`) until the combat/gear system exists — swap that constant
+    for a real stat once Phase 3 combat lands.
+- **`/newspaper`** — pulls the last 3 world ticks from `world_tick_log` and
+  renders price swings and village events as a readable daily digest.
+
+Tune the tick frequency in `.env`:
+```
+WORLD_TICK_CRON=*/10 * * * *
+```
+
 ## Next phases (not yet built here)
 
 - Clans, politics, research tree
-- NPC villages with population/food/army simulation
-- World tick cron job (resource regen, weather, market price shifts)
 - Combat, bosses, legendary items
 - Ships/ocean, companions, disease system
 - Secret societies, hidden mysteries, world events
+- Forge/upgrade crafting system
 
 Each of these slots into the same `commands/` + `utils/keyboards.js` +
 `db/schema.sql` pattern already established.

@@ -8,6 +8,9 @@ const { registerInventory } = require('./commands/inventory');
 const { registerExplore } = require('./commands/explore');
 const { registerMarket } = require('./commands/market');
 const { registerAdmin } = require('./commands/admin');
+const { registerVillages } = require('./commands/villages');
+const { registerNewspaper } = require('./commands/newspaper');
+const { startWorldEngine } = require('./engine/scheduler');
 
 const bot = new Telegraf(process.env.BOT_TOKEN);
 
@@ -20,12 +23,17 @@ registerInventory(bot);
 registerExplore(bot);
 registerMarket(bot);
 registerAdmin(bot);
+registerVillages(bot);
+registerNewspaper(bot);
 
 bot.catch((err, ctx) => {
   console.error(`Error for ${ctx.updateType}:`, err);
 });
 
-bot.launch().then(() => console.log('LISO bot is running.'));
+bot.launch().then(() => {
+  console.log('LISO bot is running.');
+  startWorldEngine(bot); // begins the living-world tick cycle (market, villages, resources)
+});
 
 process.once('SIGINT', () => bot.stop('SIGINT'));
 process.once('SIGTERM', () => bot.stop('SIGTERM'));
